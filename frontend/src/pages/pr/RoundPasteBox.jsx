@@ -215,7 +215,7 @@ export function RoundPasteBox({ preselectedCompanyId, preselectedRoundId, onShow
 
       {/* Diff & Resolution Preview Section */}
       {diffResult && (
-        <div className="glass-card" style={{ border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+        <div className="glass-card" style={{ border: '1px solid #bfdbfe' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>

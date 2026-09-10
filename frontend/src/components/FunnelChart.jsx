@@ -3,13 +3,13 @@ import React from 'react';
 export function FunnelChart({ rounds = [], eligibleCount = 0, finalOffersCount = 0, companyName = '' }) {
   // Construct funnel stages: 1. Total Eligible -> 2. Each Round Cleared -> 3. Final Offers
   const stages = [
-    { label: 'Eligible Pool', count: eligibleCount, color: '#6366f1' },
+    { label: 'Eligible Pool', count: eligibleCount, color: '#2563eb' },
     ...rounds.map((r, idx) => ({
       label: r.name,
       count: r.cleared_count || 0,
-      color: idx === 0 ? '#38bdf8' : idx === 1 ? '#0ea5e9' : '#10b981'
+      color: idx === 0 ? '#0284c7' : idx === 1 ? '#0369a1' : '#16a34a'
     })),
-    { label: 'Offers Given', count: finalOffersCount, color: '#10b981' }
+    { label: 'Offers Given', count: finalOffersCount, color: '#16a34a' }
   ];
 
   const maxCount = Math.max(...stages.map(s => s.count), 1);
@@ -30,12 +30,12 @@ export function FunnelChart({ rounds = [], eligibleCount = 0, finalOffersCount =
               </div>
             </div>
 
-            <div style={{ width: '100%', height: '10px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '6px', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '10px', background: '#f1f5f9', borderRadius: '6px', overflow: 'hidden' }}>
               <div
                 style={{
                   height: '100%',
                   width: `${widthPct}%`,
-                  background: `linear-gradient(90deg, ${stage.color} 0%, rgba(255,255,255,0.7) 120%)`,
+                  background: `linear-gradient(90deg, ${stage.color} 0%, ${stage.color}99 100%)`,
                   borderRadius: '6px',
                   transition: 'width 0.5s ease-out'
                 }}

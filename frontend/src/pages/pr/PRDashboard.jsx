@@ -38,7 +38,7 @@ export function PRDashboard({ onShowToast }) {
     return (
       <div className="glass-card" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center', padding: '40px' }}>
         <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--warning-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-          <AlertTriangle size={30} color="#fbbf24" />
+          <AlertTriangle size={30} color="#d97706" />
         </div>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '8px' }}>Batch Assignment Required</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>

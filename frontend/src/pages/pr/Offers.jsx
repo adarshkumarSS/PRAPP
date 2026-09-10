@@ -285,7 +285,7 @@ export function Offers({ onShowToast }) {
             </select>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px', background: 'rgba(15, 23, 42, 0.6)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px', background: '#f0f9ff', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid #bae6fd' }}>
             <input
               type="checkbox"
               id="isFinalCheckbox"

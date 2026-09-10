@@ -191,8 +191,8 @@ export function MyStudents({ onShowToast }) {
                             title={`Format: ${a.format_type}`}
                             style={{
                               fontSize: '0.72rem',
-                              background: a.format_type === 'COLLEGE_REGNO' ? 'rgba(99, 102, 241, 0.15)' :
-                                          a.format_type === 'LONG_NUMERIC' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                              background: a.format_type === 'COLLEGE_REGNO' ? '#ede9fe' :
+                                          a.format_type === 'LONG_NUMERIC' ? '#e0f2fe' : '#fef3c7',
                               color: a.format_type === 'COLLEGE_REGNO' ? '#6d28d9' :
                                      a.format_type === 'LONG_NUMERIC' ? '#0369a1' : '#b45309'
                             }}
@@ -286,7 +286,7 @@ export function MyStudents({ onShowToast }) {
                         <td><span className="tag-mono">{r.reg_no}</span></td>
                         <td>{r.name}</td>
                         <td><span className="tag-mono" style={{ color: '#6d28d9' }}>{r.college_regno}</span></td>
-                        <td><span className="tag-mono" style={{ color: '#38bdf8' }}>{r.long_numeric}</span></td>
+                        <td><span className="tag-mono" style={{ color: '#0369a1' }}>{r.long_numeric}</span></td>
                         <td><span className="tag-mono" style={{ color: '#b45309' }}>{r.serial}</span></td>
                       </tr>
                     ))}

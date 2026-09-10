@@ -168,7 +168,7 @@ export function Companies({ onSelectCompanyForPaste, onShowToast }) {
                   <div
                     key={round.id}
                     style={{
-                      background: 'rgba(15, 23, 42, 0.7)',
+                      background: '#f8faff',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-md)',
                       padding: '14px',

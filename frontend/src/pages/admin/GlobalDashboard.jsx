@@ -169,7 +169,7 @@ export function GlobalDashboard({ onShowToast }) {
         {/* PR Leaderboard */}
         <div className="glass-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <Trophy size={20} color="#fbbf24" />
+            <Trophy size={20} color="#d97706" />
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>PR Performance Leaderboard</h3>
           </div>
           
@@ -221,7 +221,7 @@ export function GlobalDashboard({ onShowToast }) {
         {/* Company Round-1 Clear Rates */}
         <div className="glass-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <Briefcase size={20} color="#38bdf8" />
+            <Briefcase size={20} color="#0284c7" />
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Drive Clear & Conversion Rates</h3>
           </div>
 

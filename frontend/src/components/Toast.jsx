@@ -20,16 +20,16 @@ function ToastItem({ toast, onDismiss }) {
   }, [toast, onDismiss]);
 
   const icons = {
-    success: <CheckCircle2 size={18} color="#10b981" />,
-    error: <AlertCircle size={18} color="#ef4444" />,
-    info: <Info size={18} color="#38bdf8" />
+    success: <CheckCircle2 size={18} color="#16a34a" />,
+    error: <AlertCircle size={18} color="#dc2626" />,
+    info: <Info size={18} color="#2563eb" />
   };
 
   return (
     <div className={`toast toast-${toast.type || 'info'}`}>
       {icons[toast.type] || icons.info}
-      <div style={{ flex: 1, fontSize: '0.88rem' }}>{toast.message}</div>
-      <button onClick={onDismiss} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+      <div style={{ flex: 1, fontSize: '0.88rem', color: '#0f172a' }}>{toast.message}</div>
+      <button onClick={onDismiss} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
         <X size={14} />
       </button>
     </div>
