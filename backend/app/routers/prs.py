@@ -9,11 +9,48 @@ from app.models.batch import Batch
 from app.models.admin import Admin
 from app.models.student import Student, PlacementStatus
 from app.models.company import Company
+from app.models.alias import StudentRegAlias, AliasFormatType
 from app.models.audit_log import AuditLog
 from app.schemas.pr import PRCreate, PRAssignBatch, PRResponse
 from app.services.auth_service import require_admin, get_password_hash, get_current_user
 
 router = APIRouter(prefix="/api/prs", tags=["PR Management"])
+
+def _ensure_pr_student_record(db: Session, pr: PR, batch: Batch):
+    """Ensures a PR coordinator is registered as a student candidate in their own batch and roster."""
+    existing_student = db.query(Student).filter(
+        Student.batch_id == batch.id,
+        Student.name.ilike(pr.name.strip())
+    ).first()
+
+    if existing_student:
+        if existing_student.added_by_pr_id is None:
+            existing_student.added_by_pr_id = pr.id
+    else:
+        total_students = db.query(Student).filter(Student.batch_id == batch.id).count()
+        prefix_yr = str(int(batch.year_label) - 4)[2:] if (batch.year_label and batch.year_label.isdigit()) else "23"
+        seq_num = total_students + 1
+        canonical = f"{prefix_yr}CS{seq_num:03d}"
+
+        while db.query(Student).filter(Student.reg_no == canonical).first():
+            seq_num += 1
+            canonical = f"{prefix_yr}CS{seq_num:03d}"
+
+        new_student = Student(
+            reg_no=canonical,
+            name=pr.name.strip(),
+            batch_id=batch.id,
+            added_by_pr_id=pr.id,
+            placement_status=PlacementStatus.UNPLACED
+        )
+        db.add(new_student)
+        db.flush()
+
+        college_reg = f"H2442{seq_num:02d}"
+        long_num = f"9177244200{seq_num:02d}"
+        db.add(StudentRegAlias(student_reg_no=canonical, alias_value=college_reg, format_type=AliasFormatType.COLLEGE_REGNO))
+        db.add(StudentRegAlias(student_reg_no=canonical, alias_value=long_num, format_type=AliasFormatType.LONG_NUMERIC))
+        db.add(StudentRegAlias(student_reg_no=canonical, alias_value=str(seq_num), format_type=AliasFormatType.SERIAL))
 
 @router.get("", response_model=List[PRResponse])
 def get_prs(
@@ -79,6 +116,10 @@ def create_pr(
     db.add(new_pr)
     db.flush()
 
+    # If assigned to a batch, also register PR as a student candidate under their own PR
+    if assigned_batch:
+        _ensure_pr_student_record(db, new_pr, assigned_batch)
+
     # Log audit
     audit = AuditLog(
         actor_id=admin_user["id"],
@@ -93,6 +134,12 @@ def create_pr(
     db.commit()
     db.refresh(new_pr)
 
+    student_count = db.query(Student).filter(Student.added_by_pr_id == new_pr.id).count()
+    placed_count = db.query(Student).filter(
+        Student.added_by_pr_id == new_pr.id,
+        Student.placement_status == PlacementStatus.PLACED
+    ).count()
+
     return PRResponse(
         id=new_pr.id,
         name=new_pr.name,
@@ -103,9 +150,9 @@ def create_pr(
         assigned_by_name=admin_user["name"] if new_pr.assigned_by else None,
         assigned_at=new_pr.assigned_at,
         created_at=new_pr.created_at,
-        students_count=0,
-        placed_count=0,
-        placement_pct=0.0
+        students_count=student_count,
+        placed_count=placed_count,
+        placement_pct=round((placed_count / student_count * 100.0), 1) if student_count > 0 else 0.0
     )
 
 @router.put("/{pr_id}/assign-batch", response_model=PRResponse)
@@ -129,6 +176,8 @@ def assign_batch_to_pr(
         pr.assigned_by = admin_user["id"]
         pr.assigned_at = datetime.datetime.utcnow()
         new_batch_year = batch.year_label
+        # Auto-ensure PR candidate student record
+        _ensure_pr_student_record(db, pr, batch)
     else:
         pr.batch_id = None
         pr.assigned_by = admin_user["id"]

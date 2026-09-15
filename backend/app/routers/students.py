@@ -86,6 +86,76 @@ def get_students(
     students = query.order_by(Student.reg_no.asc()).all()
     return [map_student_response(s) for s in students]
 
+@router.post("", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
+def create_student(
+    req: StudentCreate,
+    current_user: dict = Depends(require_assigned_pr),
+    db: Session = Depends(get_db)
+):
+    canonical = req.reg_no.strip().upper() if req.reg_no else None
+    if not canonical:
+        raise HTTPException(status_code=400, detail="Canonical Registration Number is required")
+
+    # Determine batch_id & pr_id
+    if current_user["role"] == "PR":
+        target_batch_id = current_user["batch_id"]
+        pr_id = current_user["id"]
+    elif current_user["role"] == "ADMIN":
+        if not req.batch_id:
+            raise HTTPException(status_code=400, detail="batch_id is required when Admin creates a student")
+        target_batch_id = req.batch_id
+        pr_id = None
+
+    batch = db.query(Batch).filter(Batch.id == target_batch_id).first()
+    if not batch:
+        raise HTTPException(status_code=400, detail="Target batch does not exist")
+
+    existing = db.query(Student).filter(Student.reg_no == canonical).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Student with registration number '{canonical}' already exists")
+
+    student = Student(
+        reg_no=canonical,
+        name=req.name.strip() if req.name else None,
+        batch_id=target_batch_id,
+        added_by_pr_id=pr_id,
+        placement_status=PlacementStatus.UNPLACED
+    )
+    db.add(student)
+    db.flush()
+
+    # Process Aliases
+    aliases_to_insert = []
+    if req.college_regno:
+        aliases_to_insert.append((req.college_regno, AliasFormatType.COLLEGE_REGNO))
+    if req.long_numeric:
+        aliases_to_insert.append((req.long_numeric, AliasFormatType.LONG_NUMERIC))
+    if req.serial:
+        aliases_to_insert.append((req.serial, AliasFormatType.SERIAL))
+
+    for raw_alias, f_type in aliases_to_insert:
+        norm_alias = normalize_token(raw_alias)
+        if norm_alias and norm_alias != canonical:
+            existing_alias = db.query(StudentRegAlias).filter(
+                StudentRegAlias.alias_value == norm_alias
+            ).first()
+            if not existing_alias:
+                alias_entry = StudentRegAlias(
+                    student_reg_no=canonical,
+                    alias_value=norm_alias,
+                    format_type=f_type
+                )
+                db.add(alias_entry)
+            elif existing_alias.student_reg_no != canonical:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Alias '{raw_alias}' is already linked to another student ({existing_alias.student_reg_no})"
+                )
+
+    db.commit()
+    db.refresh(student)
+    return map_student_response(student)
+
 @router.post("/bulk", response_model=BulkUploadResult)
 def bulk_add_students(
     req: BulkStudentUploadRequest,
