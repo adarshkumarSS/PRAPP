@@ -292,65 +292,68 @@ export function MyStudents({ onShowToast }) {
         isOpen={isSingleModalOpen}
         onClose={() => setIsSingleModalOpen(false)}
         title="Add New Candidate"
+        maxWidth="600px"
       >
         <form onSubmit={handleSingleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Canonical Registration No *</label>
-            <input
-              type="text"
-              required
-              className="form-input"
-              placeholder="e.g. 23CS016"
-              value={singleForm.reg_no}
-              onChange={(e) => setSingleForm({ ...singleForm, reg_no: e.target.value })}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '16px' }}>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Canonical Reg No *</label>
+              <input
+                type="text"
+                required
+                className="form-input"
+                placeholder="e.g. 23CS016"
+                value={singleForm.reg_no}
+                onChange={(e) => setSingleForm({ ...singleForm, reg_no: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Candidate Name</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Suresh M"
+                value={singleForm.name}
+                onChange={(e) => setSingleForm({ ...singleForm, name: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">College Reg No (Optional)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. H244216"
+                value={singleForm.college_regno}
+                onChange={(e) => setSingleForm({ ...singleForm, college_regno: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Long Numeric ID (Optional)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. 917724420016"
+                value={singleForm.long_numeric}
+                onChange={(e) => setSingleForm({ ...singleForm, long_numeric: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Serial Number (Optional)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. 16"
+                value={singleForm.serial}
+                onChange={(e) => setSingleForm({ ...singleForm, serial: e.target.value })}
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Candidate Name</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. Suresh M"
-              value={singleForm.name}
-              onChange={(e) => setSingleForm({ ...singleForm, name: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">College Registration No (Optional)</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. H244216"
-              value={singleForm.college_regno}
-              onChange={(e) => setSingleForm({ ...singleForm, college_regno: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Long Numeric ID (Optional)</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. 917724420016"
-              value={singleForm.long_numeric}
-              onChange={(e) => setSingleForm({ ...singleForm, long_numeric: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Serial Number (Optional)</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. 16"
-              value={singleForm.serial}
-              onChange={(e) => setSingleForm({ ...singleForm, serial: e.target.value })}
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
             <button type="button" onClick={() => setIsSingleModalOpen(false)} className="btn btn-secondary">
               Cancel
             </button>
