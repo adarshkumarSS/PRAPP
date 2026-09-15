@@ -63,6 +63,48 @@ def get_students(
 
     # Scoping: PR only sees their own assigned students
     if current_user["role"] == "PR":
+        pr = db.query(PR).filter(PR.id == current_user["id"]).first()
+        if pr and pr.batch_id:
+            # Check if student record for this PR exists
+            has_pr_student = db.query(Student).filter(
+                Student.batch_id == pr.batch_id,
+                Student.added_by_pr_id == pr.id
+            ).first()
+            if not has_pr_student:
+                # Check if existing student by name
+                existing_s = db.query(Student).filter(
+                    Student.batch_id == pr.batch_id,
+                    Student.name.ilike(pr.name.strip())
+                ).first()
+                if existing_s:
+                    existing_s.added_by_pr_id = pr.id
+                    db.commit()
+                else:
+                    total_students = db.query(Student).filter(Student.batch_id == pr.batch_id).count()
+                    prefix_yr = str(int(pr.batch.year_label) - 4)[2:] if (pr.batch and pr.batch.year_label and pr.batch.year_label.isdigit()) else "23"
+                    seq_num = total_students + 1
+                    canonical = f"{prefix_yr}CS{seq_num:03d}"
+                    while db.query(Student).filter(Student.reg_no == canonical).first():
+                        seq_num += 1
+                        canonical = f"{prefix_yr}CS{seq_num:03d}"
+
+                    new_student = Student(
+                        reg_no=canonical,
+                        name=pr.name.strip(),
+                        batch_id=pr.batch_id,
+                        added_by_pr_id=pr.id,
+                        placement_status=PlacementStatus.UNPLACED
+                    )
+                    db.add(new_student)
+                    db.flush()
+
+                    college_reg = f"H2442{seq_num:02d}"
+                    long_num = f"9177244200{seq_num:02d}"
+                    db.add(StudentRegAlias(student_reg_no=canonical, alias_value=college_reg, format_type=AliasFormatType.COLLEGE_REGNO))
+                    db.add(StudentRegAlias(student_reg_no=canonical, alias_value=long_num, format_type=AliasFormatType.LONG_NUMERIC))
+                    db.add(StudentRegAlias(student_reg_no=canonical, alias_value=str(seq_num), format_type=AliasFormatType.SERIAL))
+                    db.commit()
+
         query = query.filter(Student.added_by_pr_id == current_user["id"])
     elif current_user["role"] == "ADMIN":
         # Admin can view all or filter by batch_id / pr_id

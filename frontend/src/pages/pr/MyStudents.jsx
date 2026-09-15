@@ -20,17 +20,6 @@ export function MyStudents({ onShowToast }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Single Add Modal
-  const [isSingleModalOpen, setIsSingleModalOpen] = useState(false);
-  const [singleForm, setSingleForm] = useState({
-    reg_no: '',
-    name: '',
-    college_regno: '',
-    long_numeric: '',
-    serial: ''
-  });
-  const [singleSubmitting, setSingleSubmitting] = useState(false);
-
   // Bulk Add Wizard Modal
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
@@ -53,41 +42,6 @@ export function MyStudents({ onShowToast }) {
   useEffect(() => {
     fetchStudents();
   }, [search]);
-
-  const handleFillMyDetails = () => {
-    if (!user) return;
-    const batchYear = user.batch_year || '2027';
-    const prefixYr = (parseInt(batchYear) - 4).toString().slice(-2) || '23';
-    const nextSeq = students.length + 1;
-    setSingleForm({
-      reg_no: `${prefixYr}CS${String(nextSeq).padStart(3, '0')}`,
-      name: user.name || '',
-      college_regno: `H2442${String(nextSeq).padStart(2, '0')}`,
-      long_numeric: `9177244200${String(nextSeq).padStart(2, '0')}`,
-      serial: String(nextSeq)
-    });
-  };
-
-  const handleSingleSubmit = async (e) => {
-    e.preventDefault();
-    if (!singleForm.reg_no.trim()) {
-      if (onShowToast) onShowToast('Canonical Reg No is required', 'error');
-      return;
-    }
-
-    try {
-      setSingleSubmitting(true);
-      await apiClient.post('/students', singleForm);
-      if (onShowToast) onShowToast(`Candidate ${singleForm.name || singleForm.reg_no} added successfully!`, 'success');
-      setIsSingleModalOpen(false);
-      setSingleForm({ reg_no: '', name: '', college_regno: '', long_numeric: '', serial: '' });
-      fetchStudents();
-    } catch (err) {
-      if (onShowToast) onShowToast(err.message, 'error');
-    } finally {
-      setSingleSubmitting(false);
-    }
-  };
 
   // Parse pasted TSV/CSV text into structured rows
   const handleParsePastedText = (text) => {
@@ -168,44 +122,10 @@ export function MyStudents({ onShowToast }) {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => setIsSingleModalOpen(true)} className="btn btn-secondary">
-            <Plus size={18} /> Add Candidate
-          </button>
-          <button onClick={() => setIsBulkModalOpen(true)} className="btn btn-primary">
-            <Upload size={18} /> Bulk Add Candidates
-          </button>
-        </div>
+        <button onClick={() => setIsBulkModalOpen(true)} className="btn btn-primary">
+          <Upload size={18} /> Bulk Add Candidates
+        </button>
       </div>
-
-      {/* PR Coordinator Self-Enrollment Notice */}
-      {user && !students.some(s => s.name?.toLowerCase().trim() === user.name?.toLowerCase().trim()) && (
-        <div style={{
-          padding: '12px 16px',
-          background: 'rgba(59, 130, 246, 0.08)',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
-          borderRadius: '8px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <div style={{ fontSize: '0.88rem', color: '#60a5fa' }}>
-            ℹ️ Signed in as PR Coordinator <b>{user.name}</b> ({user.email}). PR coordinators are also registered candidates in their batch.
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              handleFillMyDetails();
-              setIsSingleModalOpen(true);
-            }}
-            className="btn btn-primary btn-sm"
-            style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}
-          >
-            <Plus size={14} /> Add Myself to Candidate Roster
-          </button>
-        </div>
-      )}
 
       {/* Search & Filter Bar */}
       <div className="glass-card" style={{ padding: '16px' }}>
@@ -250,7 +170,7 @@ export function MyStudents({ onShowToast }) {
                   <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '36px' }}>
                     <GraduationCap size={40} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
                     <div style={{ fontWeight: 600 }}>No candidates found in this batch.</div>
-                    <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>Click "Add Candidate" or "Bulk Add Candidates" to import your student roster with aliases.</div>
+                    <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>Click "Bulk Add Candidates" to import your student roster with aliases.</div>
                   </td>
                 </tr>
               ) : (
@@ -266,7 +186,7 @@ export function MyStudents({ onShowToast }) {
                         <span>{s.name || '—'}</span>
                         {user && s.name?.toLowerCase().trim() === user.name?.toLowerCase().trim() && (
                           <span className="badge badge-accent" style={{ fontSize: '0.68rem' }}>
-                            You (PR Coordinator)
+                            You (PR)
                           </span>
                         )}
                       </div>
@@ -319,97 +239,6 @@ export function MyStudents({ onShowToast }) {
           </table>
         </div>
       </div>
-
-      {/* Single Add Candidate Modal */}
-      <Modal
-        isOpen={isSingleModalOpen}
-        onClose={() => setIsSingleModalOpen(false)}
-        title="Add Single Candidate"
-        maxWidth="540px"
-      >
-        <form onSubmit={handleSingleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Add a candidate to your PR roster with multi-format aliases.
-            </p>
-            {user && (
-              <button
-                type="button"
-                onClick={handleFillMyDetails}
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}
-              >
-                <Sparkles size={13} color="#2563eb" /> Fill My Details (PR)
-              </button>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Canonical Registration No *</label>
-            <input
-              type="text"
-              required
-              className="form-input"
-              placeholder="e.g. 23CS013"
-              value={singleForm.reg_no}
-              onChange={(e) => setSingleForm({ ...singleForm, reg_no: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Candidate Name</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. Adarsh Kumar"
-              value={singleForm.name}
-              onChange={(e) => setSingleForm({ ...singleForm, name: e.target.value })}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-            <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.78rem' }}>College Reg No</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. H244213"
-                value={singleForm.college_regno}
-                onChange={(e) => setSingleForm({ ...singleForm, college_regno: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.78rem' }}>Long Numeric</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. 917724420013"
-                value={singleForm.long_numeric}
-                onChange={(e) => setSingleForm({ ...singleForm, long_numeric: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.78rem' }}>Serial</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. 13"
-                value={singleForm.serial}
-                onChange={(e) => setSingleForm({ ...singleForm, serial: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-            <button type="button" onClick={() => setIsSingleModalOpen(false)} className="btn btn-secondary">
-              Cancel
-            </button>
-            <button type="submit" disabled={singleSubmitting} className="btn btn-primary">
-              {singleSubmitting ? 'Saving...' : 'Add Candidate'}
-            </button>
-          </div>
-        </form>
-      </Modal>
 
       {/* Bulk Add Wizard Modal */}
       <Modal
