@@ -210,11 +210,20 @@ export function Login({ onShowToast }) {
             </button>
             <button
               type="button"
+              onClick={() => { setRoleTab('PR'); setEmail('adarsh@tce.edu'); setPassword('PR@TCE2027'); }}
+              className="btn btn-secondary btn-sm"
+              style={{ justifyContent: 'space-between', fontSize: '0.78rem', padding: '9px 12px' }}
+            >
+              <span>🎓 PR (Adarsh): <b>adarsh@tce.edu</b></span>
+              <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>PR@TCE2027</span>
+            </button>
+            <button
+              type="button"
               onClick={() => { setRoleTab('PR'); setEmail('pr.arun@tce.edu'); setPassword('PR@TCE2027'); }}
               className="btn btn-secondary btn-sm"
               style={{ justifyContent: 'space-between', fontSize: '0.78rem', padding: '9px 12px' }}
             >
-              <span>🎓 PR (2027): <b>pr.arun@tce.edu</b></span>
+              <span>🎓 PR (Arun): <b>pr.arun@tce.edu</b></span>
               <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>PR@TCE2027</span>
             </button>
           </div>
