@@ -38,11 +38,16 @@ export function PRAssignment({ onShowToast }) {
 
   const handleCreatePR = async (e) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.endsWith('@tce.edu')) {
+      if (onShowToast) onShowToast('Only official @tce.edu email addresses are permitted.', 'error');
+      return;
+    }
     try {
       setSubmitting(true);
       await apiClient.post('/prs', {
         name: name.trim(),
-        email: email.trim(),
+        email: cleanEmail,
         password,
         batch_id: selectedBatchId || null
       });
@@ -194,12 +199,12 @@ export function PRAssignment({ onShowToast }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label">Email Address (@tce.edu)</label>
             <input
               type="email"
               required
               className="form-input"
-              placeholder="e.g. pr.arun@placement.edu"
+              placeholder="e.g. pr.arun@tce.edu"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />

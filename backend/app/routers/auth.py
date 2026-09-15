@@ -12,6 +12,12 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     email_clean = req.email.lower().strip()
     
+    if not email_clean.endswith("@tce.edu"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Access restricted: Only official @tce.edu email addresses are permitted."
+        )
+    
     # 1. Try Admin first if role_hint is ADMIN or not specified
     if req.role_hint in [None, "ADMIN"]:
         admin = db.query(Admin).filter(Admin.email.ilike(email_clean)).first()
@@ -49,13 +55,19 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/register-admin", response_model=TokenResponse)
 def register_admin(req: AdminCreate, db: Session = Depends(get_db)):
-    existing = db.query(Admin).filter(Admin.email.ilike(req.email.strip())).first()
+    clean_email = req.email.lower().strip()
+    if not clean_email.endswith("@tce.edu"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration is restricted to official @tce.edu email addresses only."
+        )
+    existing = db.query(Admin).filter(Admin.email.ilike(clean_email)).first()
     if existing:
         raise HTTPException(status_code=400, detail="Admin with this email already exists")
 
     new_admin = Admin(
         name=req.name,
-        email=req.email.lower().strip(),
+        email=clean_email,
         password_hash=get_password_hash(req.password)
     )
     db.add(new_admin)

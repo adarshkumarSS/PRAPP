@@ -5,8 +5,8 @@ import { Shield, Users, LogIn } from 'lucide-react';
 export function Login({ onShowToast }) {
   const { login } = useAuth();
   const [roleTab, setRoleTab] = useState('ADMIN');
-  const [email, setEmail] = useState('admin@placement.edu');
-  const [password, setPassword] = useState('Admin@2027');
+  const [email, setEmail] = useState('admin@tce.edu');
+  const [password, setPassword] = useState('Admin@TCE2027');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -14,20 +14,25 @@ export function Login({ onShowToast }) {
     setRoleTab(tab);
     setError(null);
     if (tab === 'ADMIN') {
-      setEmail('admin@placement.edu');
-      setPassword('Admin@2027');
+      setEmail('admin@tce.edu');
+      setPassword('Admin@TCE2027');
     } else {
-      setEmail('pr.arun@placement.edu');
-      setPassword('PR@2027');
+      setEmail('pr.arun@tce.edu');
+      setPassword('PR@TCE2027');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.endsWith('@tce.edu')) {
+      setError('Access restricted: Only official @tce.edu email addresses are permitted.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      await login(email, password, roleTab);
+      await login(cleanEmail, password, roleTab);
       if (onShowToast) onShowToast(`Welcome back! Logged in as ${roleTab}.`, 'success');
     } catch (err) {
       setError(err.message || 'Login failed. Please check credentials.');
@@ -155,14 +160,14 @@ export function Login({ onShowToast }) {
         {/* Login Form */}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label">Email Address (@tce.edu)</label>
             <input
               type="email"
               required
               className="form-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. user@placement.edu"
+              placeholder="e.g. pr.arun@tce.edu"
             />
           </div>
 
@@ -196,21 +201,21 @@ export function Login({ onShowToast }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
               type="button"
-              onClick={() => { setRoleTab('ADMIN'); setEmail('admin@placement.edu'); setPassword('Admin@2027'); }}
+              onClick={() => { setRoleTab('ADMIN'); setEmail('admin@tce.edu'); setPassword('Admin@TCE2027'); }}
               className="btn btn-secondary btn-sm"
               style={{ justifyContent: 'space-between', fontSize: '0.78rem', padding: '9px 12px' }}
             >
-              <span>👑 Admin: <b>admin@placement.edu</b></span>
-              <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>Admin@2027</span>
+              <span>👑 Admin: <b>admin@tce.edu</b></span>
+              <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>Admin@TCE2027</span>
             </button>
             <button
               type="button"
-              onClick={() => { setRoleTab('PR'); setEmail('pr.arun@placement.edu'); setPassword('PR@2027'); }}
+              onClick={() => { setRoleTab('PR'); setEmail('pr.arun@tce.edu'); setPassword('PR@TCE2027'); }}
               className="btn btn-secondary btn-sm"
               style={{ justifyContent: 'space-between', fontSize: '0.78rem', padding: '9px 12px' }}
             >
-              <span>🎓 PR (2027): <b>pr.arun@placement.edu</b></span>
-              <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>PR@2027</span>
+              <span>🎓 PR (2027): <b>pr.arun@tce.edu</b></span>
+              <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>PR@TCE2027</span>
             </button>
           </div>
         </div>
