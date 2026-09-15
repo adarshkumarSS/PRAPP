@@ -144,13 +144,13 @@ export function MyStudents({ onShowToast }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '32px' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
+        <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
             Batch Candidates & Aliases
           </h1>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-            Canonical Student Registry. Multi-format aliases (<code style={{ fontSize: '0.78rem' }}>COLLEGE_REGNO</code>, <code style={{ fontSize: '0.78rem' }}>LONG_NUMERIC</code>, <code style={{ fontSize: '0.78rem' }}>SERIAL</code>) resolve dynamically during round pastes.
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>
+            Canonical Student Registry. Multi-format aliases resolve dynamically during round pastes.
           </p>
         </div>
 
@@ -159,17 +159,17 @@ export function MyStudents({ onShowToast }) {
             type="button"
             onClick={() => setIsSingleModalOpen(true)} 
             className="btn btn-secondary"
-            style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ whiteSpace: 'nowrap' }}
           >
-            <Plus size={16} /> Add Candidate
+            <Plus size={18} /> Add Candidate
           </button>
           <button 
             type="button"
             onClick={() => setIsBulkModalOpen(true)} 
             className="btn btn-primary"
-            style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ whiteSpace: 'nowrap' }}
           >
-            <Upload size={16} /> Bulk Add Candidates
+            <Upload size={18} /> Bulk Add Candidates
           </button>
         </div>
       </div>
@@ -287,118 +287,75 @@ export function MyStudents({ onShowToast }) {
         </div>
       </div>
 
-      {/* Single Add Candidate Modal */}
+      {/* Add Candidate Modal */}
       <Modal
         isOpen={isSingleModalOpen}
         onClose={() => setIsSingleModalOpen(false)}
-        title="Add Candidate"
-        maxWidth="580px"
+        title="Add New Candidate"
       >
-        <form onSubmit={handleSingleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Register a new candidate in your batch roster with canonical ID and optional lookup aliases.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem' }}>
-                Canonical Reg No <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <input
-                type="text"
-                required
-                className="form-input"
-                style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}
-                placeholder="e.g. 23CS016"
-                value={singleForm.reg_no}
-                onChange={(e) => setSingleForm({ ...singleForm, reg_no: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.82rem' }}>
-                Candidate Name
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. Suresh M"
-                value={singleForm.name}
-                onChange={(e) => setSingleForm({ ...singleForm, name: e.target.value })}
-              />
-            </div>
+        <form onSubmit={handleSingleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Canonical Registration No *</label>
+            <input
+              type="text"
+              required
+              className="form-input"
+              placeholder="e.g. 23CS016"
+              value={singleForm.reg_no}
+              onChange={(e) => setSingleForm({ ...singleForm, reg_no: e.target.value })}
+            />
           </div>
 
-          {/* Lookup Aliases Section */}
-          <div style={{
-            background: 'rgba(248, 250, 252, 0.8)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '10px',
-            padding: '14px 16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Optional Lookup Aliases
-              </span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                Used during round paste resolution
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 90px', gap: '10px', alignItems: 'flex-start' }}>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  College Reg No
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}
-                  placeholder="e.g. H244216"
-                  value={singleForm.college_regno}
-                  onChange={(e) => setSingleForm({ ...singleForm, college_regno: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  Long Numeric
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}
-                  placeholder="e.g. 917724420016"
-                  value={singleForm.long_numeric}
-                  onChange={(e) => setSingleForm({ ...singleForm, long_numeric: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  Serial
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)', textAlign: 'center' }}
-                  placeholder="16"
-                  value={singleForm.serial}
-                  onChange={(e) => setSingleForm({ ...singleForm, serial: e.target.value })}
-                />
-              </div>
-            </div>
+          <div className="form-group">
+            <label className="form-label">Candidate Name</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. Suresh M"
+              value={singleForm.name}
+              onChange={(e) => setSingleForm({ ...singleForm, name: e.target.value })}
+            />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+          <div className="form-group">
+            <label className="form-label">College Registration No (Optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. H244216"
+              value={singleForm.college_regno}
+              onChange={(e) => setSingleForm({ ...singleForm, college_regno: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Long Numeric ID (Optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. 917724420016"
+              value={singleForm.long_numeric}
+              onChange={(e) => setSingleForm({ ...singleForm, long_numeric: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Serial Number (Optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. 16"
+              value={singleForm.serial}
+              onChange={(e) => setSingleForm({ ...singleForm, serial: e.target.value })}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
             <button type="button" onClick={() => setIsSingleModalOpen(false)} className="btn btn-secondary">
               Cancel
             </button>
-            <button type="submit" disabled={singleSubmitting} className="btn btn-primary" style={{ minWidth: '130px' }}>
-              {singleSubmitting ? 'Saving...' : 'Add Candidate'}
+            <button type="submit" disabled={singleSubmitting} className="btn btn-primary">
+              {singleSubmitting ? 'Adding...' : 'Add Candidate'}
             </button>
           </div>
         </form>
