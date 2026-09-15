@@ -61,18 +61,15 @@ def get_students(
 ):
     query = db.query(Student)
 
-    # Scoping: if user is PR, auto-scope to PR's batch unless overridden with batch_id
+    # Scoping: PR only sees their own assigned students
     if current_user["role"] == "PR":
-        if current_user.get("batch_id"):
-            query = query.filter(Student.batch_id == current_user["batch_id"])
-        else:
-            return [] # Unassigned PR sees no students
-
-    if batch_id:
-        query = query.filter(Student.batch_id == batch_id)
-
-    if pr_id:
-        query = query.filter(Student.added_by_pr_id == pr_id)
+        query = query.filter(Student.added_by_pr_id == current_user["id"])
+    elif current_user["role"] == "ADMIN":
+        # Admin can view all or filter by batch_id / pr_id
+        if batch_id:
+            query = query.filter(Student.batch_id == batch_id)
+        if pr_id:
+            query = query.filter(Student.added_by_pr_id == pr_id)
 
     if placement_status:
         query = query.filter(Student.placement_status == placement_status)
@@ -186,6 +183,8 @@ def get_student_by_reg_no(
     student = db.query(Student).filter(Student.reg_no == reg_no.strip().upper()).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    if current_user["role"] == "PR" and student.added_by_pr_id != current_user["id"]:
+        raise HTTPException(status_code=404, detail="Student not found in your assigned candidates")
     return map_student_response(student)
 
 @router.delete("/{reg_no}", status_code=status.HTTP_204_NO_CONTENT)
@@ -198,9 +197,9 @@ def delete_student(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    # If PR, verify batch
-    if current_user["role"] == "PR" and student.batch_id != current_user["batch_id"]:
-        raise HTTPException(status_code=403, detail="Cannot delete student from another batch")
+    # If PR, verify ownership
+    if current_user["role"] == "PR" and student.added_by_pr_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Cannot delete candidate managed by another PR")
 
     db.delete(student)
     db.commit()

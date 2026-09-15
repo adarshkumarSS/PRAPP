@@ -52,6 +52,11 @@ def create_pr(
     db: Session = Depends(get_db)
 ):
     clean_email = req.email.lower().strip()
+    if not clean_email.endswith("@tce.edu"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PR registration is restricted to official @tce.edu email addresses only."
+        )
     existing = db.query(PR).filter(PR.email == clean_email).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"PR with email '{clean_email}' already exists")

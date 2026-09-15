@@ -78,7 +78,7 @@ export function PRDashboard({ onShowToast }) {
         <MetricCard
           title="Unique Placed Students"
           value={data?.unique_placed ?? 0}
-          subtitle={`Out of ${data?.total_students ?? 0} total candidates in batch`}
+          subtitle={`Out of ${data?.total_students ?? 0} assigned candidates`}
           icon={GraduationCap}
           badge={`${data?.placement_pct ?? 0}%`}
           color="primary"
@@ -97,7 +97,7 @@ export function PRDashboard({ onShowToast }) {
         <MetricCard
           title="Campus Drives Active"
           value={data?.total_companies ?? 0}
-          subtitle="Registered recruiters for this batch"
+          subtitle="Recruitment drives in this batch"
           icon={Building2}
           color="info"
         />

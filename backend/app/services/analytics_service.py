@@ -140,23 +140,32 @@ class AnalyticsService:
         company_clear_rates: List[Dict[str, Any]] = []
 
         for comp in companies:
-            eligible_count = db.query(Eligibility).filter(
+            elig_q = db.query(Eligibility).filter(
                 Eligibility.company_id == comp.id,
                 Eligibility.eligible == True
-            ).count()
+            )
+            if pr_id:
+                elig_q = elig_q.join(Student, Student.reg_no == Eligibility.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+            eligible_count = elig_q.count()
 
             # Sequence 1 Round (Round 1)
             r1 = db.query(Round).filter(Round.company_id == comp.id, Round.sequence == 1).first()
             r1_cleared = 0
             if r1:
-                r1_cleared = db.query(RoundResult).filter(
+                r1_q = db.query(RoundResult).filter(
                     RoundResult.round_id == r1.id,
                     RoundResult.status == ResultStatus.CLEARED
-                ).count()
+                )
+                if pr_id:
+                    r1_q = r1_q.join(Student, Student.reg_no == RoundResult.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+                r1_cleared = r1_q.count()
 
             r1_pct = round((r1_cleared / eligible_count * 100.0), 1) if eligible_count > 0 else 0.0
 
-            offers_count = db.query(Offer).filter(Offer.company_id == comp.id).count()
+            off_q = db.query(Offer).filter(Offer.company_id == comp.id)
+            if pr_id:
+                off_q = off_q.join(Student, Student.reg_no == Offer.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+            offers_count = off_q.count()
             conversion_pct = round((offers_count / eligible_count * 100.0), 1) if eligible_count > 0 else 0.0
 
             company_clear_rates.append({

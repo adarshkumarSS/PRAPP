@@ -64,6 +64,8 @@ class AliasResolverService:
             )
             if batch_id:
                 alias_query = alias_query.filter(Student.batch_id == batch_id)
+            if pr_id:
+                alias_query = alias_query.filter(Student.added_by_pr_id == pr_id)
 
             alias_match = alias_query.first()
 
@@ -87,6 +89,8 @@ class AliasResolverService:
             )
             if batch_id:
                 student_query = student_query.filter(Student.batch_id == batch_id)
+            if pr_id:
+                student_query = student_query.filter(Student.added_by_pr_id == pr_id)
 
             student_match = student_query.first()
 

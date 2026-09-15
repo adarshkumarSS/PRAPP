@@ -53,8 +53,8 @@ def get_unrecognized_tokens(
 ):
     query = db.query(UnrecognizedToken).filter(UnrecognizedToken.resolved == resolved)
 
-    if current_user["role"] == "PR" and current_user.get("batch_id"):
-        query = query.filter(UnrecognizedToken.batch_id == current_user["batch_id"])
+    if current_user["role"] == "PR":
+        query = query.filter(UnrecognizedToken.pr_id == current_user["id"])
     elif batch_id:
         query = query.filter(UnrecognizedToken.batch_id == batch_id)
 
@@ -86,10 +86,16 @@ def resolve_unrecognized_token(
     if not unrec:
         raise HTTPException(status_code=404, detail="Unrecognized token record not found")
 
+    if current_user["role"] == "PR" and unrec.pr_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Cannot resolve tokens belonging to another PR queue")
+
     canonical = req.canonical_reg_no.strip().upper()
     student = db.query(Student).filter(Student.reg_no == canonical).first()
     if not student:
         raise HTTPException(status_code=404, detail=f"Student with canonical reg no '{canonical}' not found")
+
+    if current_user["role"] == "PR" and student.added_by_pr_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Cannot map token to a student managed by another PR")
 
     norm_token = normalize_token(unrec.token_value)
     # Check if alias already exists

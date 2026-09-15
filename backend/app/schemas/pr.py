@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -8,6 +8,14 @@ class PRCreate(BaseModel):
     email: EmailStr
     password: str
     batch_id: Optional[UUID] = None
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_domain(cls, v: str) -> str:
+        cleaned = str(v).lower().strip()
+        if not cleaned.endswith("@tce.edu"):
+            raise ValueError("Access restricted: Only official @tce.edu email addresses are permitted.")
+        return cleaned
 
 class PRAssignBatch(BaseModel):
     batch_id: Optional[UUID] = None # null to unassign

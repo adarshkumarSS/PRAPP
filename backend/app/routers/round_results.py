@@ -27,7 +27,11 @@ def get_round_results(
     if not round_obj:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    results = db.query(RoundResult).filter(RoundResult.round_id == round_id).all()
+    query = db.query(RoundResult).filter(RoundResult.round_id == round_id)
+    if current_user["role"] == "PR":
+        query = query.join(Student, Student.reg_no == RoundResult.student_reg_no).filter(Student.added_by_pr_id == current_user["id"])
+
+    results = query.all()
     return [
         RoundResultResponse(
             id=r.id,
@@ -59,26 +63,28 @@ def preview_round_results_diff(
         extracted = extract_tokens_from_text(req.raw_text)
         tokens_to_resolve.extend(extracted)
 
-    # Resolve tokens using AliasResolverService
+    pr_id = current_user["id"] if current_user["role"] == "PR" else None
+
+    # Resolve tokens using AliasResolverService (scoped to PR if PR role)
     resolved = AliasResolverService.resolve_tokens(
         db=db,
         raw_tokens=tokens_to_resolve,
         batch_id=company.batch_id,
         source_context=f"Paste Box: {company.name} -> {round_obj.name}",
-        pr_id=current_user["id"] if current_user["role"] == "PR" else None
+        pr_id=pr_id
     )
 
-    # Existing results for this round
-    existing_results = {
-        r.student_reg_no: r.status
-        for r in db.query(RoundResult).filter(RoundResult.round_id == round_id).all()
-    }
+    # Existing results for this round (scoped if PR)
+    ex_query = db.query(RoundResult).filter(RoundResult.round_id == round_id)
+    if pr_id:
+        ex_query = ex_query.join(Student, Student.reg_no == RoundResult.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+    existing_results = {r.student_reg_no: r.status for r in ex_query.all()}
 
-    # Eligibility map
-    eligibility_map = {
-        e.student_reg_no: e.eligible
-        for e in db.query(Eligibility).filter(Eligibility.company_id == company.id).all()
-    }
+    # Eligibility map (scoped if PR)
+    el_query = db.query(Eligibility).filter(Eligibility.company_id == company.id)
+    if pr_id:
+        el_query = el_query.join(Student, Student.reg_no == Eligibility.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+    eligibility_map = {e.student_reg_no: e.eligible for e in el_query.all()}
 
     diff_items: List[RoundResultDiffItem] = []
     newly_cleared_count = 0
@@ -143,10 +149,13 @@ def commit_round_results(
     committed_count = 0
     for item in req.results:
         canonical_reg = item.student_reg_no.strip().upper()
-        # Verify student
+        # Verify student exists and belongs to this PR if PR role
         student = db.query(Student).filter(Student.reg_no == canonical_reg).first()
         if not student:
             continue
+
+        if current_user["role"] == "PR" and student.added_by_pr_id != current_user["id"]:
+            continue # Cannot modify results of another PR's candidate
 
         result_row = db.query(RoundResult).filter(
             RoundResult.round_id == round_id,
