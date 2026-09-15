@@ -283,7 +283,7 @@ export function RoundPasteBox({ preselectedCompanyId, preselectedRoundId, onShow
                       </span>
                     </td>
                     <td>
-                      <span className="tag-mono" style={{ fontWeight: 700, color: '#fff' }}>
+                      <span className="tag-mono" style={{ fontWeight: 700, color: '#0f172a', background: '#e2e8f0', borderColor: '#cbd5e1' }}>
                         {item.student_reg_no}
                       </span>
                     </td>

@@ -224,7 +224,7 @@ export function MyStudents({ onShowToast }) {
                 students.map((s) => (
                   <tr key={s.reg_no}>
                     <td>
-                      <span className="tag-mono" style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff' }}>
+                      <span className="tag-mono" style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', background: '#e2e8f0', borderColor: '#cbd5e1' }}>
                         {s.reg_no}
                       </span>
                     </td>
