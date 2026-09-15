@@ -20,6 +20,17 @@ export function MyStudents({ onShowToast }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
+  // Single Add Modal
+  const [isSingleModalOpen, setIsSingleModalOpen] = useState(false);
+  const [singleForm, setSingleForm] = useState({
+    reg_no: '',
+    name: '',
+    college_regno: '',
+    long_numeric: '',
+    serial: ''
+  });
+  const [singleSubmitting, setSingleSubmitting] = useState(false);
+
   // Bulk Add Wizard Modal
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
@@ -42,6 +53,27 @@ export function MyStudents({ onShowToast }) {
   useEffect(() => {
     fetchStudents();
   }, [search]);
+
+  const handleSingleSubmit = async (e) => {
+    e.preventDefault();
+    if (!singleForm.reg_no.trim()) {
+      if (onShowToast) onShowToast('Canonical Reg No is required', 'error');
+      return;
+    }
+
+    try {
+      setSingleSubmitting(true);
+      await apiClient.post('/students', singleForm);
+      if (onShowToast) onShowToast(`Candidate ${singleForm.name || singleForm.reg_no} added successfully!`, 'success');
+      setIsSingleModalOpen(false);
+      setSingleForm({ reg_no: '', name: '', college_regno: '', long_numeric: '', serial: '' });
+      fetchStudents();
+    } catch (err) {
+      if (onShowToast) onShowToast(err.message, 'error');
+    } finally {
+      setSingleSubmitting(false);
+    }
+  };
 
   // Parse pasted TSV/CSV text into structured rows
   const handleParsePastedText = (text) => {
@@ -122,9 +154,14 @@ export function MyStudents({ onShowToast }) {
           </p>
         </div>
 
-        <button onClick={() => setIsBulkModalOpen(true)} className="btn btn-primary">
-          <Upload size={18} /> Bulk Add Candidates
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={() => setIsSingleModalOpen(true)} className="btn btn-secondary">
+            <Plus size={18} /> Add Candidate
+          </button>
+          <button onClick={() => setIsBulkModalOpen(true)} className="btn btn-primary">
+            <Upload size={18} /> Bulk Add Candidates
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter Bar */}
@@ -239,6 +276,85 @@ export function MyStudents({ onShowToast }) {
           </table>
         </div>
       </div>
+
+      {/* Single Add Candidate Modal */}
+      <Modal
+        isOpen={isSingleModalOpen}
+        onClose={() => setIsSingleModalOpen(false)}
+        title="Add Candidate"
+        maxWidth="540px"
+      >
+        <form onSubmit={handleSingleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+            Add a candidate to your PR roster with optional lookup aliases.
+          </p>
+
+          <div className="form-group">
+            <label className="form-label">Canonical Registration No *</label>
+            <input
+              type="text"
+              required
+              className="form-input"
+              placeholder="e.g. 23CS016"
+              value={singleForm.reg_no}
+              onChange={(e) => setSingleForm({ ...singleForm, reg_no: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Candidate Name</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. Suresh M"
+              value={singleForm.name}
+              onChange={(e) => setSingleForm({ ...singleForm, name: e.target.value })}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.78rem' }}>College Reg No</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. H244216"
+                value={singleForm.college_regno}
+                onChange={(e) => setSingleForm({ ...singleForm, college_regno: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.78rem' }}>Long Numeric</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. 917724420016"
+                value={singleForm.long_numeric}
+                onChange={(e) => setSingleForm({ ...singleForm, long_numeric: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.78rem' }}>Serial</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. 16"
+                value={singleForm.serial}
+                onChange={(e) => setSingleForm({ ...singleForm, serial: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+            <button type="button" onClick={() => setIsSingleModalOpen(false)} className="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" disabled={singleSubmitting} className="btn btn-primary">
+              {singleSubmitting ? 'Saving...' : 'Add Candidate'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Bulk Add Wizard Modal */}
       <Modal
