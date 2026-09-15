@@ -8,6 +8,7 @@ from app.models.pr import PR
 from app.models.batch import Batch
 from app.models.admin import Admin
 from app.models.student import Student, PlacementStatus
+from app.models.company import Company
 from app.models.audit_log import AuditLog
 from app.schemas.pr import PRCreate, PRAssignBatch, PRResponse
 from app.services.auth_service import require_admin, get_password_hash, get_current_user
@@ -168,3 +169,36 @@ def assign_batch_to_pr(
         placed_count=placed_count,
         placement_pct=round((placed_count / student_count * 100.0), 1) if student_count > 0 else 0.0
     )
+
+@router.delete("/{pr_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_pr(
+    pr_id: UUID,
+    admin_user: dict = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    pr = db.query(PR).filter(PR.id == pr_id).first()
+    if not pr:
+        raise HTTPException(status_code=404, detail="PR account not found")
+
+    pr_name = pr.name
+    pr_email = pr.email
+
+    # Detach students and companies added by this PR
+    db.query(Student).filter(Student.added_by_pr_id == pr_id).update({Student.added_by_pr_id: None})
+    db.query(Company).filter(Company.created_by_pr_id == pr_id).update({Company.created_by_pr_id: None})
+
+    # Log audit entry
+    audit = AuditLog(
+        actor_id=admin_user["id"],
+        actor_name=admin_user["name"],
+        actor_role="ADMIN",
+        action="DELETE_PR",
+        target_type="PR",
+        target_id=str(pr.id),
+        details=f"Admin deleted PR coordinator account '{pr_name}' ({pr_email})"
+    )
+    db.add(audit)
+
+    db.delete(pr)
+    db.commit()
+    return None

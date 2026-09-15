@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
 import { Modal } from '../../components/Modal';
-import { Users, Plus, ShieldCheck, Check, AlertCircle } from 'lucide-react';
+import { Users, Plus, ShieldCheck, Check, AlertCircle, Trash2 } from 'lucide-react';
 
 export function PRAssignment({ onShowToast }) {
   const [prs, setPrs] = useState([]);
@@ -70,6 +70,19 @@ export function PRAssignment({ onShowToast }) {
       const payload = { batch_id: newBatchId ? newBatchId : null };
       await apiClient.put(`/prs/${prId}/assign-batch`, payload);
       if (onShowToast) onShowToast('PR batch assignment updated and logged.', 'success');
+      fetchData();
+    } catch (err) {
+      if (onShowToast) onShowToast(err.message, 'error');
+    }
+  };
+
+  const handleDeletePR = async (pr) => {
+    if (!window.confirm(`Are you sure you want to delete PR coordinator '${pr.name}' (${pr.email})?`)) {
+      return;
+    }
+    try {
+      await apiClient.delete(`/prs/${pr.id}`);
+      if (onShowToast) onShowToast(`PR coordinator '${pr.name}' deleted successfully.`, 'success');
       fetchData();
     } catch (err) {
       if (onShowToast) onShowToast(err.message, 'error');
@@ -161,15 +174,34 @@ export function PRAssignment({ onShowToast }) {
                       </div>
                     </td>
                     <td>
-                      {pr.batch_id ? (
-                        <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
-                          <Check size={12} /> Active
-                        </span>
-                      ) : (
-                        <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>
-                          <AlertCircle size={12} /> Needs Batch
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {pr.batch_id ? (
+                          <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+                            <Check size={12} /> Active
+                          </span>
+                        ) : (
+                          <span className="badge badge-danger" style={{ fontSize: '0.7rem' }}>
+                            <AlertCircle size={12} /> Needs Batch
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePR(pr)}
+                          className="btn btn-secondary btn-sm"
+                          title={`Delete PR coordinator ${pr.name}`}
+                          style={{
+                            padding: '4px 8px',
+                            color: '#ef4444',
+                            borderColor: 'rgba(239, 68, 68, 0.25)',
+                            background: 'rgba(239, 68, 68, 0.05)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
