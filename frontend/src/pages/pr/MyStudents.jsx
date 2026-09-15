@@ -25,6 +25,7 @@ export function MyStudents({ onShowToast }) {
   const [singleForm, setSingleForm] = useState({
     reg_no: '',
     name: '',
+    email: '',
     college_regno: '',
     long_numeric: '',
     serial: ''
@@ -61,12 +62,17 @@ export function MyStudents({ onShowToast }) {
       return;
     }
 
+    if (singleForm.email && !singleForm.email.trim().toLowerCase().endsWith('@tce.edu')) {
+      if (onShowToast) onShowToast('Email must end with @tce.edu', 'error');
+      return;
+    }
+
     try {
       setSingleSubmitting(true);
       await apiClient.post('/students', singleForm);
       if (onShowToast) onShowToast(`Candidate ${singleForm.name || singleForm.reg_no} added successfully!`, 'success');
       setIsSingleModalOpen(false);
-      setSingleForm({ reg_no: '', name: '', college_regno: '', long_numeric: '', serial: '' });
+      setSingleForm({ reg_no: '', name: '', email: '', college_regno: '', long_numeric: '', serial: '' });
       fetchStudents();
     } catch (err) {
       if (onShowToast) onShowToast(err.message, 'error');
@@ -91,15 +97,32 @@ export function MyStudents({ onShowToast }) {
       // Split by tab, comma, or pipe
       const parts = line.split(/[\t,|]/).map(p => p.trim());
       
-      // Expected order: Canonical RegNo, Name, College RegNo, Long Numeric, Serial
-      // If fewer columns, map smartly
+      // Expected order: Canonical RegNo, Name, Email (@tce.edu), College RegNo, Long Numeric, Serial
+      // Or 5 columns: Canonical RegNo, Name, College RegNo, Long Numeric, Serial
       if (parts.length >= 1) {
+        let email = '';
+        let college_regno = '';
+        let long_numeric = '';
+        let serial = '';
+
+        if (parts[2] && parts[2].includes('@')) {
+          email = parts[2];
+          college_regno = parts[3] || '';
+          long_numeric = parts[4] || '';
+          serial = parts[5] || '';
+        } else {
+          college_regno = parts[2] || '';
+          long_numeric = parts[3] || '';
+          serial = parts[4] || '';
+        }
+
         rows.push({
           reg_no: parts[0] || '',
           name: parts[1] || '',
-          college_regno: parts[2] || '',
-          long_numeric: parts[3] || '',
-          serial: parts[4] || ''
+          email: email,
+          college_regno: college_regno,
+          long_numeric: long_numeric,
+          serial: serial
         });
       }
     });
@@ -134,9 +157,9 @@ export function MyStudents({ onShowToast }) {
   };
 
   const handleLoadSamplePaste = () => {
-    const sample = `23CS013\tManish V\tH244213\t917724420013\t13
-23CS014\tNithya R\tH244214\t917724420014\t14
-23CS015\tPranav S\tH244215\t917724420015\t15`;
+    const sample = `23CS013\tManish V\t23cs013@tce.edu\tH244213\t917724420013\t13
+23CS014\tNithya R\t23cs014@tce.edu\tH244214\t917724420014\t14
+23CS015\tPranav S\t23cs015@tce.edu\tH244215\t917724420015\t15`;
     handleParsePastedText(sample);
   };
 
@@ -237,6 +260,11 @@ export function MyStudents({ onShowToast }) {
                           </span>
                         )}
                       </div>
+                      {s.email && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400, marginTop: '2px' }}>
+                          {s.email}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -248,9 +276,12 @@ export function MyStudents({ onShowToast }) {
                             style={{
                               fontSize: '0.72rem',
                               background: a.format_type === 'COLLEGE_REGNO' ? '#ede9fe' :
-                                          a.format_type === 'LONG_NUMERIC' ? '#e0f2fe' : '#fef3c7',
+                                          a.format_type === 'LONG_NUMERIC' ? '#e0f2fe' :
+                                          a.format_type === 'EMAIL' ? '#ecfdf5' : '#fef3c7',
                               color: a.format_type === 'COLLEGE_REGNO' ? '#6d28d9' :
-                                     a.format_type === 'LONG_NUMERIC' ? '#0369a1' : '#b45309'
+                                     a.format_type === 'LONG_NUMERIC' ? '#0369a1' :
+                                     a.format_type === 'EMAIL' ? '#047857' : '#b45309',
+                              borderColor: a.format_type === 'EMAIL' ? '#a7f3d0' : undefined
                             }}
                           >
                             {a.alias_value}
@@ -292,7 +323,7 @@ export function MyStudents({ onShowToast }) {
         isOpen={isSingleModalOpen}
         onClose={() => setIsSingleModalOpen(false)}
         title="Add New Candidate"
-        maxWidth="600px"
+        maxWidth="620px"
       >
         <form onSubmit={handleSingleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '16px' }}>
@@ -316,6 +347,17 @@ export function MyStudents({ onShowToast }) {
                 placeholder="e.g. Suresh M"
                 value={singleForm.name}
                 onChange={(e) => setSingleForm({ ...singleForm, name: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Email Address (@tce.edu)</label>
+              <input
+                type="email"
+                className="form-input"
+                placeholder="e.g. 23cs016@tce.edu"
+                value={singleForm.email}
+                onChange={(e) => setSingleForm({ ...singleForm, email: e.target.value })}
               />
             </div>
 
@@ -369,12 +411,12 @@ export function MyStudents({ onShowToast }) {
         isOpen={isBulkModalOpen}
         onClose={() => setIsBulkModalOpen(false)}
         title="Multi-Format Candidate Import Wizard"
-        maxWidth="780px"
+        maxWidth="820px"
       >
         <form onSubmit={handleBulkSubmit}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
             Paste columns from Excel/Google Sheets (Tab or comma separated).<br />
-            <b>Expected Columns:</b> <code>Canonical RegNo</code> | <code>Name</code> | <code>College RegNo (H2442**)</code> | <code>Long Numeric (91772442****)</code> | <code>Serial (1, 2, 3...)</code>
+            <b>Expected Columns:</b> <code>Canonical RegNo</code> | <code>Name</code> | <code>Email (@tce.edu)</code> | <code>College RegNo (H2442**)</code> | <code>Long Numeric (91772442****)</code> | <code>Serial (1, 2, 3...)</code>
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
@@ -388,7 +430,7 @@ export function MyStudents({ onShowToast }) {
               rows={5}
               className="form-textarea"
               style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}
-              placeholder={`23CS013\tManish V\tH244213\t917724420013\t13\n23CS014\tNithya R\tH244214\t917724420014\t14`}
+              placeholder={`23CS013\tManish V\t23cs013@tce.edu\tH244213\t917724420013\t13\n23CS014\tNithya R\t23cs014@tce.edu\tH244214\t917724420014\t14`}
               value={pasteText}
               onChange={(e) => handleParsePastedText(e.target.value)}
             />
@@ -408,6 +450,7 @@ export function MyStudents({ onShowToast }) {
                     <tr>
                       <th>Canonical RegNo</th>
                       <th>Name</th>
+                      <th>Email (@tce.edu)</th>
                       <th>College RegNo</th>
                       <th>Long Numeric</th>
                       <th>Serial</th>
@@ -418,6 +461,7 @@ export function MyStudents({ onShowToast }) {
                       <tr key={idx}>
                         <td><span className="tag-mono">{r.reg_no}</span></td>
                         <td>{r.name}</td>
+                        <td><span className="tag-mono" style={{ color: '#047857', background: '#ecfdf5', borderColor: '#a7f3d0' }}>{r.email || `${r.reg_no.toLowerCase()}@tce.edu`}</span></td>
                         <td><span className="tag-mono" style={{ color: '#6d28d9' }}>{r.college_regno}</span></td>
                         <td><span className="tag-mono" style={{ color: '#0369a1' }}>{r.long_numeric}</span></td>
                         <td><span className="tag-mono" style={{ color: '#b45309' }}>{r.serial}</span></td>

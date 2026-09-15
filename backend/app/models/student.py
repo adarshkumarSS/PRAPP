@@ -15,6 +15,7 @@ class Student(Base):
     # Canonical normalized Reg No as PK (e.g. "21CS001" or "H2442AB")
     reg_no = Column(String(100), primary_key=True, index=True)
     name = Column(String(255), nullable=True)
+    email = Column(String(255), nullable=True, index=True)
     
     batch_id = Column(UUID(as_uuid=True), ForeignKey("batches.id", ondelete="CASCADE"), nullable=False, index=True)
     added_by_pr_id = Column(UUID(as_uuid=True), ForeignKey("prs.id", ondelete="SET NULL"), nullable=True, index=True)

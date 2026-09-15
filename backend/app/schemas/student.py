@@ -12,6 +12,7 @@ class AliasCreateItem(BaseModel):
 class StudentCreate(BaseModel):
     reg_no: str
     name: Optional[str] = None
+    email: Optional[str] = None          # e.g. "23cs016@tce.edu"
     college_regno: Optional[str] = None  # e.g. "H2442AB"
     long_numeric: Optional[str] = None   # e.g. "917724421301"
     serial: Optional[str] = None         # e.g. "1" or "01"
@@ -20,6 +21,7 @@ class StudentCreate(BaseModel):
 class BulkStudentItem(BaseModel):
     reg_no: str
     name: Optional[str] = None
+    email: Optional[str] = None
     college_regno: Optional[str] = None
     long_numeric: Optional[str] = None
     serial: Optional[str] = None
@@ -46,6 +48,7 @@ class StudentOfferItem(BaseModel):
 class StudentResponse(BaseModel):
     reg_no: str
     name: Optional[str] = None
+    email: Optional[str] = None
     batch_id: UUID
     batch_year: Optional[str] = None
     added_by_pr_id: Optional[UUID] = None

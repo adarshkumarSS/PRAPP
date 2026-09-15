@@ -10,6 +10,7 @@ class AliasFormatType(str, enum.Enum):
     COLLEGE_REGNO = "COLLEGE_REGNO"  # e.g. H2442**
     LONG_NUMERIC = "LONG_NUMERIC"    # e.g. 91772442****
     SERIAL = "SERIAL"                # e.g. 1, 2, 3...
+    EMAIL = "EMAIL"                  # e.g. 23cs001@tce.edu
 
 class StudentRegAlias(Base):
     __tablename__ = "student_reg_aliases"

@@ -37,6 +37,7 @@ def map_student_response(s: Student) -> StudentResponse:
     return StudentResponse(
         reg_no=s.reg_no,
         name=s.name,
+        email=s.email,
         batch_id=s.batch_id,
         batch_year=s.batch.year_label if s.batch else None,
         added_by_pr_id=s.added_by_pr_id,
@@ -78,6 +79,8 @@ def get_students(
                 ).first()
                 if existing_s:
                     existing_s.added_by_pr_id = pr.id
+                    if not existing_s.email:
+                        existing_s.email = pr.email
                     db.commit()
                 else:
                     total_students = db.query(Student).filter(Student.batch_id == pr.batch_id).count()
@@ -91,6 +94,7 @@ def get_students(
                     new_student = Student(
                         reg_no=canonical,
                         name=pr.name.strip(),
+                        email=pr.email,
                         batch_id=pr.batch_id,
                         added_by_pr_id=pr.id,
                         placement_status=PlacementStatus.UNPLACED
@@ -103,6 +107,7 @@ def get_students(
                     db.add(StudentRegAlias(student_reg_no=canonical, alias_value=college_reg, format_type=AliasFormatType.COLLEGE_REGNO))
                     db.add(StudentRegAlias(student_reg_no=canonical, alias_value=long_num, format_type=AliasFormatType.LONG_NUMERIC))
                     db.add(StudentRegAlias(student_reg_no=canonical, alias_value=str(seq_num), format_type=AliasFormatType.SERIAL))
+                    db.add(StudentRegAlias(student_reg_no=canonical, alias_value=pr.email.lower(), format_type=AliasFormatType.EMAIL))
                     db.commit()
 
         query = query.filter(Student.added_by_pr_id == current_user["id"])
@@ -118,11 +123,13 @@ def get_students(
 
     if search:
         search_norm = normalize_token(search)
-        # Search by name, reg_no, or alias
+        # Search by name, reg_no, email, or alias
         query = query.join(Student.aliases, isouter=True).filter(
             Student.reg_no.ilike(f"%{search.strip()}%") |
             Student.name.ilike(f"%{search.strip()}%") |
-            StudentRegAlias.alias_value.ilike(f"%{search_norm}%")
+            Student.email.ilike(f"%{search.strip()}%") |
+            StudentRegAlias.alias_value.ilike(f"%{search_norm}%") |
+            StudentRegAlias.alias_value.ilike(f"%{search.strip().lower()}%")
         ).distinct()
 
     students = query.order_by(Student.reg_no.asc()).all()
@@ -137,6 +144,16 @@ def create_student(
     canonical = req.reg_no.strip().upper() if req.reg_no else None
     if not canonical:
         raise HTTPException(status_code=400, detail="Canonical Registration Number is required")
+
+    # Validate email
+    student_email = None
+    if req.email and req.email.strip():
+        clean_email = req.email.strip().lower()
+        if not clean_email.endswith("@tce.edu"):
+            raise HTTPException(status_code=400, detail="Student email must belong to official @tce.edu domain")
+        student_email = clean_email
+    else:
+        student_email = f"{canonical.lower()}@tce.edu"
 
     # Determine batch_id & pr_id
     if current_user["role"] == "PR":
@@ -159,6 +176,7 @@ def create_student(
     student = Student(
         reg_no=canonical,
         name=req.name.strip() if req.name else None,
+        email=student_email,
         batch_id=target_batch_id,
         added_by_pr_id=pr_id,
         placement_status=PlacementStatus.UNPLACED
@@ -174,17 +192,19 @@ def create_student(
         aliases_to_insert.append((req.long_numeric, AliasFormatType.LONG_NUMERIC))
     if req.serial:
         aliases_to_insert.append((req.serial, AliasFormatType.SERIAL))
+    if student_email:
+        aliases_to_insert.append((student_email, AliasFormatType.EMAIL))
 
     for raw_alias, f_type in aliases_to_insert:
-        norm_alias = normalize_token(raw_alias)
-        if norm_alias and norm_alias != canonical:
+        alias_key = raw_alias.lower() if f_type == AliasFormatType.EMAIL else normalize_token(raw_alias)
+        if alias_key and alias_key != canonical:
             existing_alias = db.query(StudentRegAlias).filter(
-                StudentRegAlias.alias_value == norm_alias
+                StudentRegAlias.alias_value == alias_key
             ).first()
             if not existing_alias:
                 alias_entry = StudentRegAlias(
                     student_reg_no=canonical,
-                    alias_value=norm_alias,
+                    alias_value=alias_key,
                     format_type=f_type
                 )
                 db.add(alias_entry)
@@ -232,12 +252,20 @@ def bulk_add_students(
             skipped_count += 1
             continue
 
+        student_email = None
+        if item.email and item.email.strip():
+            clean_email = item.email.strip().lower()
+            student_email = clean_email if clean_email.endswith("@tce.edu") else f"{canonical.lower()}@tce.edu"
+        else:
+            student_email = f"{canonical.lower()}@tce.edu"
+
         # Check if student exists
         student = db.query(Student).filter(Student.reg_no == canonical).first()
         if not student:
             student = Student(
                 reg_no=canonical,
                 name=item.name.strip() if item.name else None,
+                email=student_email,
                 batch_id=target_batch_id,
                 added_by_pr_id=pr_id,
                 placement_status=PlacementStatus.UNPLACED
@@ -246,9 +274,10 @@ def bulk_add_students(
             db.flush()
             added_count += 1
         else:
-            # Update name if provided
             if item.name:
                 student.name = item.name.strip()
+            if not student.email:
+                student.email = student_email
             skipped_count += 1
 
         # Process Aliases
@@ -259,17 +288,19 @@ def bulk_add_students(
             aliases_to_insert.append((item.long_numeric, AliasFormatType.LONG_NUMERIC))
         if item.serial:
             aliases_to_insert.append((item.serial, AliasFormatType.SERIAL))
+        if student_email:
+            aliases_to_insert.append((student_email, AliasFormatType.EMAIL))
 
         for raw_alias, f_type in aliases_to_insert:
-            norm_alias = normalize_token(raw_alias)
-            if norm_alias and norm_alias != canonical:
+            alias_key = raw_alias.lower() if f_type == AliasFormatType.EMAIL else normalize_token(raw_alias)
+            if alias_key and alias_key != canonical:
                 existing_alias = db.query(StudentRegAlias).filter(
-                    StudentRegAlias.alias_value == norm_alias
+                    StudentRegAlias.alias_value == alias_key
                 ).first()
                 if not existing_alias:
                     alias_entry = StudentRegAlias(
                         student_reg_no=canonical,
-                        alias_value=norm_alias,
+                        alias_value=alias_key,
                         format_type=f_type
                     )
                     db.add(alias_entry)
