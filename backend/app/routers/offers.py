@@ -40,10 +40,7 @@ def get_offers(
     query = db.query(Offer).join(Student, Student.reg_no == Offer.student_reg_no)
 
     if current_user["role"] == "PR":
-        if current_user.get("batch_id"):
-            query = query.filter(Student.batch_id == current_user["batch_id"])
-        else:
-            return []
+        query = query.filter(Student.added_by_pr_id == current_user["id"])
     elif batch_id:
         query = query.filter(Student.batch_id == batch_id)
 
@@ -62,25 +59,29 @@ def create_offer(
     current_user: dict = Depends(require_assigned_pr),
     db: Session = Depends(get_db)
 ):
-    # Resolve student token (in case an alias was entered)
+    # Resolve student token
     raw_input = req.student_reg_no.strip()
-    norm_token = normalize_token(raw_input)
+    pr_id = current_user["id"] if current_user["role"] == "PR" else None
     
-    # Try alias or canonical lookup
+    # Try alias or canonical lookup (scoped to PR)
     res = AliasResolverService.resolve_tokens(
         db=db,
         raw_tokens=[raw_input],
         batch_id=current_user.get("batch_id") if current_user["role"] == "PR" else None,
+        pr_id=pr_id,
         record_unrecognized=False
     )
 
     if not res["matched"]:
-        raise HTTPException(status_code=404, detail=f"Student '{raw_input}' could not be resolved.")
+        raise HTTPException(status_code=404, detail=f"Student '{raw_input}' could not be resolved among your candidates.")
 
     canonical_reg = res["matched"][0]["canonical_reg_no"]
     student = db.query(Student).filter(Student.reg_no == canonical_reg).first()
     if not student:
         raise HTTPException(status_code=404, detail=f"Student '{canonical_reg}' not found.")
+
+    if current_user["role"] == "PR" and student.added_by_pr_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="You can only record offers for your assigned candidates.")
 
     company = db.query(Company).filter(Company.id == req.company_id).first()
     if not company:
@@ -132,6 +133,9 @@ def update_offer(
     if not offer:
         raise HTTPException(status_code=404, detail="Offer not found")
 
+    if current_user["role"] == "PR" and offer.student and offer.student.added_by_pr_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Cannot modify offers of another PR's candidate")
+
     if req.package_value is not None:
         offer.package_value = req.package_value
     if req.offer_date is not None:
@@ -160,6 +164,9 @@ def delete_offer(
     offer = db.query(Offer).filter(Offer.id == offer_id).first()
     if not offer:
         raise HTTPException(status_code=404, detail="Offer not found")
+
+    if current_user["role"] == "PR" and offer.student and offer.student.added_by_pr_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Cannot delete offers of another PR's candidate")
 
     student_reg = offer.student_reg_no
     db.delete(offer)

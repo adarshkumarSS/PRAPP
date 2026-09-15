@@ -19,31 +19,46 @@ from app.services.alias_resolver import AliasResolverService, extract_tokens_fro
 
 router = APIRouter(prefix="/api/companies", tags=["Companies & Drives"])
 
-def map_company_response(c: Company, db: Session) -> CompanyResponse:
+def map_company_response(c: Company, db: Session, pr_id: Optional[UUID] = None) -> CompanyResponse:
     rounds_res = []
     for r in c.rounds:
-        cleared = db.query(RoundResult).filter(RoundResult.round_id == r.id, RoundResult.status == ResultStatus.CLEARED).count()
-        not_cleared = db.query(RoundResult).filter(RoundResult.round_id == r.id, RoundResult.status == ResultStatus.NOT_CLEARED).count()
-        absent = db.query(RoundResult).filter(RoundResult.round_id == r.id, RoundResult.status == ResultStatus.ABSENT).count()
+        cleared_q = db.query(RoundResult).filter(RoundResult.round_id == r.id, RoundResult.status == ResultStatus.CLEARED)
+        not_cleared_q = db.query(RoundResult).filter(RoundResult.round_id == r.id, RoundResult.status == ResultStatus.NOT_CLEARED)
+        absent_q = db.query(RoundResult).filter(RoundResult.round_id == r.id, RoundResult.status == ResultStatus.ABSENT)
+
+        if pr_id:
+            cleared_q = cleared_q.join(Student, Student.reg_no == RoundResult.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+            not_cleared_q = not_cleared_q.join(Student, Student.reg_no == RoundResult.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+            absent_q = absent_q.join(Student, Student.reg_no == RoundResult.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+
         rounds_res.append(RoundResponse(
             id=r.id,
             company_id=r.company_id,
             name=r.name,
             sequence=r.sequence,
-            cleared_count=cleared,
-            not_cleared_count=not_cleared,
-            absent_count=absent
+            cleared_count=cleared_q.count(),
+            not_cleared_count=not_cleared_q.count(),
+            absent_count=absent_q.count()
         ))
 
-    eligible_count = db.query(Eligibility).filter(Eligibility.company_id == c.id, Eligibility.eligible == True).count()
-    offers_count = db.query(Offer).filter(Offer.company_id == c.id).count()
+    elig_q = db.query(Eligibility).filter(Eligibility.company_id == c.id, Eligibility.eligible == True)
+    off_q = db.query(Offer).filter(Offer.company_id == c.id)
+
+    if pr_id:
+        elig_q = elig_q.join(Student, Student.reg_no == Eligibility.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+        off_q = off_q.join(Student, Student.reg_no == Offer.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+
+    eligible_count = elig_q.count()
+    offers_count = off_q.count()
     
     # R1 Clear %
     r1 = next((r for r in c.rounds if r.sequence == 1), None)
     r1_pct = 0.0
     if r1 and eligible_count > 0:
-        r1_cleared = db.query(RoundResult).filter(RoundResult.round_id == r1.id, RoundResult.status == ResultStatus.CLEARED).count()
-        r1_pct = round((r1_cleared / eligible_count * 100.0), 1)
+        r1_cleared_q = db.query(RoundResult).filter(RoundResult.round_id == r1.id, RoundResult.status == ResultStatus.CLEARED)
+        if pr_id:
+            r1_cleared_q = r1_cleared_q.join(Student, Student.reg_no == RoundResult.student_reg_no).filter(Student.added_by_pr_id == pr_id)
+        r1_pct = round((r1_cleared_q.count() / eligible_count * 100.0), 1)
 
     return CompanyResponse(
         id=c.id,
@@ -66,7 +81,9 @@ def get_companies(
     db: Session = Depends(get_db)
 ):
     query = db.query(Company)
+    pr_id = None
     if current_user["role"] == "PR":
+        pr_id = current_user["id"]
         if current_user.get("batch_id"):
             query = query.filter(Company.batch_id == current_user["batch_id"])
         else:
@@ -75,7 +92,7 @@ def get_companies(
         query = query.filter(Company.batch_id == batch_id)
 
     companies = query.order_by(Company.created_at.desc()).all()
-    return [map_company_response(c, db) for c in companies]
+    return [map_company_response(c, db, pr_id=pr_id) for c in companies]
 
 @router.post("", response_model=CompanyResponse, status_code=status.HTTP_201_CREATED)
 def create_company(
@@ -132,7 +149,8 @@ def get_company(
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company drive not found")
-    return map_company_response(company, db)
+    pr_id = current_user["id"] if current_user["role"] == "PR" else None
+    return map_company_response(company, db, pr_id=pr_id)
 
 @router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_company(
@@ -187,8 +205,12 @@ def get_company_eligibility(
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    # Return all students in this batch with their eligible status
-    batch_students = db.query(Student).filter(Student.batch_id == company.batch_id).all()
+    # Scoping: If PR, only return their assigned students
+    student_q = db.query(Student).filter(Student.batch_id == company.batch_id)
+    if current_user["role"] == "PR":
+        student_q = student_q.filter(Student.added_by_pr_id == current_user["id"])
+
+    batch_students = student_q.order_by(Student.reg_no.asc()).all()
     results = []
     for s in batch_students:
         elig = db.query(Eligibility).filter(
